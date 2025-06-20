@@ -8,7 +8,7 @@
     "start": "nodemon server.js"
   },
   "type": "module",
-  "author": "Surya",
+  "author": "Kuldeep",
   "license": "ISC",
   "dependencies": {
     "axios": "^1.8.2",
