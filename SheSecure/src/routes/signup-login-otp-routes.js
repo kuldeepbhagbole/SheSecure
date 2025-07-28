@@ -129,7 +129,9 @@ export const signUp = async (formData, coursesData, setIsSigningUp) => {
 
 export const logIn = async (email, emailOTP) => {
     try {
-        await verifyEmail(emailOTP);
+        const result = await verifyEmail(emailOTP);
+        if(!result.success)
+            return toast.error(result.message);
 
         const response = await fetch(api + '/auth/login', {
             method: 'POST',
@@ -140,6 +142,7 @@ export const logIn = async (email, emailOTP) => {
         if (response.ok) {
             const data = await response.json();
             if (data.token) {
+                console.log(data.user);
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('user', JSON.stringify(data.user));
                 window.location.href = '/dashboard';
