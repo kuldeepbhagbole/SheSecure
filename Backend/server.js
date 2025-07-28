@@ -32,7 +32,10 @@ const server = http.createServer(app);
 // Setup socket.io
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL,
+    origin: [
+      process.env.FRONTEND_URL,
+      'http://10.0.2.2:3000',
+    ],
     methods: ["GET", "POST"],
     credentials: true
   }
@@ -45,7 +48,10 @@ cloudinaryConnect();
 // CORS configuration
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL,
+    origin: [
+      process.env.FRONTEND_URL,
+      'http://10.0.2.2:3000'
+    ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     credentials: true
@@ -64,6 +70,7 @@ app.use(
     tempFileDir: "/tmp",
   })
 );
+app.set('trust proxy', 1); 
 
 // Session setup with MongoDB storage
 const sessionMiddleware = session({
@@ -78,8 +85,7 @@ const sessionMiddleware = session({
     maxAge: 24 * 60 * 60 * 1000,
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production', //for production
-    // secure: false, //for localhost
-    sameSite: 'lax',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
   },
 });
 
