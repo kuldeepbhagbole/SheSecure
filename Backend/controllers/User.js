@@ -307,10 +307,21 @@ export const signUp = async (req, res) => {
 
         // Send email (non-critical operation)
         if (createdUser.approved === "Unverified") {
-            mailSender(email,"Account created & Pending for Verification",
+            mailSender(process.env.EMAIL_USER,"Account created & Pending for Verification",
                 `A new ${userType} has signed up and is awaiting approval.\n\nName: ${firstName} ${lastName}\nEmail: ${email}\n\nApprove or reject in the admin panel.`
             ).catch(console.error);
+
+            mailSender(email,"Account created & Pending for Verification",
+                `Hii ${firstName} ${lastName}\n\nEmail ${email}\n\n Your account is created successfully and waiting for verificaiton by SheSecure Authority.`
+            ).catch(console.error);
         }
+        else{
+            mailSender(email,"Account created & Pending for Verification",
+                `Hii ${firstName} ${lastName}\n\nEmail ${email}\n\n Your account is created successfully and now you can login <span style="color:blue">https://shesecure.vercel.app/login</span>.`
+            ).catch(console.error);
+        }
+
+        
 
         return res.status(200).json({
             success: true,
