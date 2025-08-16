@@ -91,7 +91,7 @@ const sessionMiddleware = session({
 
 app.use(sessionMiddleware);
 
-// Create namespaces for different features
+// Create namespaces(isolated channel or endpoints) for different features
 const chatNamespace = io.of('/chat');
 const sosNamespace = io.of('/sos');
 const locationNamespace = io.of('/location');
