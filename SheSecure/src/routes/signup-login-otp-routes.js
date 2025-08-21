@@ -2,7 +2,7 @@ import { toast } from "react-toastify";
 import { api } from "../config/config"
 
 export const sendEmailOTP = (setEmailTimer, email) => {
-    setEmailTimer(59);
+    setEmailTimer(59);``
     fetch(api + '/auth/send-otp', {
         method: 'POST',
         credentials: 'include',
