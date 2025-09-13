@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { updateProfile, getUserDetails } from "../routes/profile-routes";
 import { toast } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
+import { setUser } from "../redux/authSlice";
 import {
   Phone,
   Calendar,
@@ -12,7 +13,6 @@ import {
   Pencil,
   BadgeInfo,
 } from "lucide-react";
-import { setUser } from "../redux/authSlice";
 
 const UpdateProfile = () => {
   const [formData, setFormData] = useState({
@@ -21,19 +21,19 @@ const UpdateProfile = () => {
     dob: "",
     displayPicture: null,
   });
-  const [initialFormData, setInitialFormData] = useState({}); // To track initial data
-  const [isSubmitting, setIsSubmitting] = useState(false); // For disabling button during submit
+  const [initialFormData, setInitialFormData] = useState({}); 
+  const [user, setUserData] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const token = useSelector((state) => state.auth.token);
-  const user = useSelector((state) => state.auth.user);
 
   // Fetch profile data
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const res = await getUserDetails(token);
-        dispatch(setUser(res.user));
+        setUserData(res.user);
         const details = res.user.additionalDetails || {};
         const dataToSet = {
           gender: details.gender || "",
@@ -42,7 +42,7 @@ const UpdateProfile = () => {
           displayPicture: null,
         };
         setFormData(dataToSet);
-        setInitialFormData(dataToSet); // Set initial form data
+        setInitialFormData(dataToSet);
       } catch {
         toast.error("Failed to load profile data");
       }
@@ -60,12 +60,11 @@ const UpdateProfile = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsSubmitting(true); // Disable button during submission
+    setIsSubmitting(true);
 
     const data = new FormData();
     let hasUpdates = false;
 
-    // Compare initial form data with current form data
     Object.entries(formData).forEach(([key, value]) => {
       if (key === "displayPicture") {
         if (value) {
@@ -88,7 +87,10 @@ const UpdateProfile = () => {
     // Send the data to the API
     try {
       const res = await updateProfile(token, data);
+      console.log("updated data", res);
       if (res.success) {
+        dispatch(setUser(res.user));
+        localStorage.setItem('user', JSON.stringify(res.user));
         toast.success(res.message);
         navigate("/profile");
       }
@@ -100,7 +102,11 @@ const UpdateProfile = () => {
   };
 
   if (!user)
-    return <div className="text-center mt-32 text-base text-gray-600">Loading...</div>;
+    return (
+      <div className="text-center mt-32 text-base text-gray-600">
+        Loading...
+      </div>
+    );
 
   const isGenderSet = !!user.additionalDetails?.gender;
 

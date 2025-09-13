@@ -15,7 +15,7 @@ import { toast } from "react-toastify";
 import { useSelector } from "react-redux";
 
 const MyProfile = () => {
-  const [user, setUser] = useState(null);
+  const [user, setUserData] = useState(null);
   const [activeTab, setActiveTab] = useState("profile");
   const [modalImage, setModalImage] = useState(null);
   const navigate = useNavigate();
@@ -24,7 +24,7 @@ const MyProfile = () => {
   useEffect(() => {
     getUserDetails(token)
       .then((res) => {
-        setUser(res.user);
+        setUserData(res.user);
       })
       .catch(() => toast.error("Failed to load profile"));
   }, []);

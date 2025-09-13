@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 
 const ChatBox = () => {
@@ -109,7 +109,7 @@ const ChatBox = () => {
   const handleSendMessage = (e) => {
     e.preventDefault();
 
-    if (!newMessage.trim() || activeRoom?.isEnded) return;
+    if (!newMessage.trim() || activeRoom?.status == "Completed") return;
 
     dispatch({ type: "socket/sendMessage", payload: { content: newMessage } });
     setNewMessage("");
@@ -117,12 +117,30 @@ const ChatBox = () => {
 
   const handleEndChatRequest = () => {
     if (user?.userType === "Counsellor") {
-      dispatch({
-        type: "socket/requestEndChat",
-        payload: { chatRoomId: activeRoom._id },
-      });
+      if (activeRoom.endRequestStatus) {
+        // Cancel end request
+        dispatch({
+          type: "socket/cancelEndChatRequest",
+          payload: { chatRoomId: activeRoom._id },
+        });
+      } else {
+        // Request end chat
+        dispatch({
+          type: "socket/requestEndChat",
+          payload: { chatRoomId: activeRoom._id },
+        });
+      }
     }
   };
+
+  // Show end chat confirmation dialog when requested
+  useEffect(() => {
+    if (activeRoom?.endRequestStatus === true && user?.userType === "User") {
+        setShowEndChatConfirm(true);
+    } else {
+        setShowEndChatConfirm(false);
+    }
+}, [activeRoom?.endRequestStatus, user?.userType]);
 
   const handleEndChatResponse = (accepted) => {
     dispatch({
@@ -131,15 +149,6 @@ const ChatBox = () => {
     });
     setShowEndChatConfirm(false);
   };
-
-  // Show end chat confirmation dialog when requested
-  useEffect(() => {
-    if (activeRoom?.pendingEndRequest && user?.userType === "User") {
-      setShowEndChatConfirm(true);
-    } else {
-      setShowEndChatConfirm(false);
-    }
-  }, [activeRoom?.pendingEndRequest, user?.userType]);
 
   // Check if someone is typing in the current chat room
   const isUserTyping =
@@ -222,31 +231,41 @@ const ChatBox = () => {
                 )}
               </h3>
               <p className="text-sm text-gray-500">
-                {activeRoom.chatRequest.problemType}:{" "}
-                {activeRoom.chatRequest.brief}
+                {activeRoom.problemType}: {activeRoom.brief}
               </p>
             </div>
           </div>
           <div className="flex items-center">
             <div
               className={`px-3 py-1 text-xs font-medium rounded-full mr-3 ${
-                activeRoom.isEnded
+                activeRoom.status == "Completed"
                   ? "bg-red-100 text-red-700"
                   : "bg-green-100 text-green-700"
               }`}
             >
-              {activeRoom.isEnded ? "Ended" : "Active"}
+              {activeRoom.status == "Completed" ? "Ended" : "Active"}
             </div>
 
             {/* End Chat Button - Only for counsellors and active chats */}
-            {user?.userType === "Counsellor" && !activeRoom.isEnded && (
-              <button
-                onClick={handleEndChatRequest}
-                className="px-3 py-1 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition duration-200 shadow-sm"
-              >
-                End Chat
-              </button>
-            )}
+            {user?.userType === "Counsellor" &&
+              activeRoom.status === "Accepted" && (
+                <button
+                  onClick={handleEndChatRequest}
+                  disabled={activeRoom.status === "Completed"}
+                  className={`px-3 py-1 text-xs font-medium rounded-lg shadow-sm transition duration-200 
+                  ${activeRoom.status === "Completed" 
+                    ? "bg-gray-400 cursor-not-allowed text-white" 
+                    : activeRoom.endRequestStatus
+                    ? "bg-yellow-600 hover:bg-yellow-700 text-white cursor-pointer"
+                    : "bg-red-600 hover:bg-red-700 text-white cursor-pointer"}`}
+                >
+                  {activeRoom.status === "Completed" 
+                  ? "Ended"
+                  : activeRoom.endRequestStatus
+                  ? "Cancel End Request"
+                  : "End Chat"}
+                </button>
+              )}
           </div>
         </div>
       </div>
@@ -278,13 +297,13 @@ const ChatBox = () => {
               <div className="flex space-x-3">
                 <button
                   onClick={() => handleEndChatResponse(true)}
-                  className="px-3 py-2 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition duration-200 shadow-sm"
+                  className="px-3 py-2 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition duration-200 shadow-sm cursor-pointer"
                 >
                   Yes, End Chat
                 </button>
                 <button
                   onClick={() => handleEndChatResponse(false)}
-                  className="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition duration-200 shadow-sm"
+                  className="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition duration-200 shadow-sm cursor-pointer"
                 >
                   No, Continue
                 </button>
@@ -403,7 +422,7 @@ const ChatBox = () => {
 
       {/* Message Input - Disabled if chat is ended */}
       <div className="p-3 bg-white border-t border-gray-200">
-        {activeRoom.isEnded ? (
+        {activeRoom.status == "Completed" ? (
           <div className="p-3 text-center text-sm text-gray-600 bg-gray-100 rounded-lg shadow-inner">
             <svg
               className="w-5 h-5 mx-auto mb-1 text-gray-500"

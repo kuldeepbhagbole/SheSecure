@@ -80,8 +80,8 @@ const UserDashboard = () => {
 
     // Scale: 0.1km -> 10 points, 5km -> 90 points
     const score = Math.min(
-      90,
-      Math.max(10, (nearestCrimeDistance / 5) * 80 + 10)
+      100,
+      Math.max(0, (nearestCrimeDistance / 2) * 100)
     );
     return Math.round(score);
   };
@@ -123,7 +123,7 @@ const UserDashboard = () => {
   };
 
   return (
-    <div className="p-4 lg:mb-8 sm:mb-24 md:p-6 space-y-8 max-w-6xl mx-auto">
+    <div className="p-4 lg:mb-8 sm:mb-8 md:p-6 space-y-8 max-w-6xl mx-auto">
       <div className="w-full space-y-8">
         {/* Safety Status Banner */}
         <div

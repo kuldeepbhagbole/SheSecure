@@ -1,4 +1,6 @@
 import io from 'socket.io-client';
+import { toast } from 'react-toastify';
+
 import {
   setSocket,
   setConnected
@@ -20,7 +22,8 @@ import {
   incrementUnreadCount,
   markMessageRead,
   setUserTyping,
-  clearUserTyping
+  clearUserTyping,
+  updateEndRequestStatus
 } from '../redux/chatSlice';
 import { wsUrl } from '../config/config';
 
@@ -40,7 +43,7 @@ const chatSocket = store => {
       if (socket) socket.disconnect();
 
       // Create new socket
-      socket = io(wsUrl+'/chat');
+      socket = io(wsUrl + '/chat');
 
       // Socket event handlers
       socket.on('connect', () => {
@@ -61,6 +64,19 @@ const chatSocket = store => {
         }
       });
 
+      socket.on('end_chat_requested', ({ chatRoomId }) => {
+        dispatch(updateEndRequestStatus({ chatRoomId, status: true }));
+      });
+
+      socket.on('end_chat_request_canceled', ({ chatRoomId }) => {
+        dispatch(updateEndRequestStatus({ chatRoomId, status: false }));
+      });
+
+      socket.on('end_chat_request', ({ chatRoomId }) => {
+        dispatch(addPendingEndRequest(chatRoomId));
+        dispatch(updateEndRequestStatus({ chatRoomId, status: true }));
+      });
+
       socket.on('increment_unread', ({ chatRoomId }) => {
         dispatch(incrementUnreadCount({ chatRoomId }));
       });
@@ -76,7 +92,13 @@ const chatSocket = store => {
 
       socket.on('error', (error) => {
         console.error('Socket error:', error);
+        if (error?.message) {
+          toast.error(error.message);
+        } else {
+          toast.error('Something went wrong with the chat');
+        }
       });
+
 
       // Set up chat event listeners
       // For counsellors
@@ -102,9 +124,9 @@ const chatSocket = store => {
       }
 
       // For both user types
-      socket.on('chat_request_accepted', ({ chatRequest, chatRoom }) => {
+      socket.on('chat_request_accepted', ({ chatRequest }) => {
         dispatch(updateChatRequest(chatRequest));
-        dispatch(addChatRoom(chatRoom));
+        dispatch(addChatRoom(chatRequest));
       });
 
       socket.on('chat_room_created', (chatRoom) => {
@@ -139,20 +161,6 @@ const chatSocket = store => {
         dispatch(updateUnreadCount(data));
       });
 
-      socket.on('end_chat_request', ({ chatRoomId }) => {
-        dispatch(addPendingEndRequest(chatRoomId));
-
-        // Add a system message to make the request visible
-        dispatch(addMessage({
-          _id: `system-end-request-${Date.now()}`,
-          chatRoom: chatRoomId,
-          sender: { _id: 'system' },
-          content: 'The counselor has requested to end this chat. Please accept or decline.',
-          isSystem: true,
-          createdAt: new Date().toISOString(),
-        }));
-      });
-
       socket.on('clear_end_request_lock', ({ chatRoomId }) => {
         dispatch(removePendingEndRequest(chatRoomId));
       });
@@ -170,6 +178,7 @@ const chatSocket = store => {
             createdAt: new Date().toISOString(),
           }));
         }
+        dispatch(updateEndRequestStatus({ chatRoomId, status: false }));
       });
 
       socket.on('chat_ended', ({ chatRoomId }) => {
@@ -199,7 +208,7 @@ const chatSocket = store => {
       socket.emit('create_chat_request', {
         userId: user._id,
         problemType,
-        brief,
+        brief
       });
     }
 
@@ -256,6 +265,18 @@ const chatSocket = store => {
       if (!socket || !user || user.userType !== 'Counsellor') return next(action);
 
       socket.emit('request_end_chat', {
+        chatRoomId,
+        counsellorId: user._id,
+      });
+    }
+
+    if (action.type === 'socket/cancelEndChatRequest') {
+      const { chatRoomId } = action.payload;
+      const { user } = getState().auth;
+
+      if (!socket || !user || user.userType !== 'Counsellor') return next(action);
+
+      socket.emit('cancel_end_chat_request', {
         chatRoomId,
         counsellorId: user._id,
       });

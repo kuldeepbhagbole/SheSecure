@@ -2,7 +2,7 @@ import { toast } from "react-toastify";
 import { api } from "../config/config"
 
 export const sendEmailOTP = (setEmailTimer, email) => {
-    setEmailTimer(59);``
+    setEmailTimer(59);
     fetch(api + '/auth/send-otp', {
         method: 'POST',
         credentials: 'include',
@@ -142,7 +142,6 @@ export const logIn = async (email, emailOTP) => {
         if (response.ok) {
             const data = await response.json();
             if (data.token) {
-                console.log(data.user);
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('user', JSON.stringify(data.user));
                 window.location.href = '/dashboard';
