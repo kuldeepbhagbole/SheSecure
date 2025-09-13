@@ -1,33 +1,34 @@
 import mongoose from "mongoose";
 
 const chatRoomSchema = new mongoose.Schema({
-    chatRequest: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'ChatRequest',
-      required: true
-    },
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true
     },
+    problemType: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    brief: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    status: {
+      type: String,
+      enum: ['Pending', 'Accepted', 'Completed'],
+      default: 'Pending'
+    },
     counsellor: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true
+      default: null
     },
-    isActive: {
-      type: Boolean,
-      default: true
-    },
-    isEnded: {
+    endRequestStatus: {
       type: Boolean,
       default: false
-    },
-    endedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      default: null
     },
     endedAt: {
       type: Date,
