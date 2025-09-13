@@ -41,7 +41,7 @@ async function cleanupResources(resources) {
 
 // Function to assign admin in a round-robin fashion
 const getNextAdmin = async () => {
-    const admins = await User.find({ accountType: "Admin", approved: "Verified" }).sort('_id'); // Get all admins
+    const admins = await User.find({ userType: "Admin", approved: "Verified" }).sort('_id'); // Get all admins
     if (admins.length === 0) return null; // No admins available
 
     // Find the last assigned report to determine the last admin
@@ -129,7 +129,7 @@ export const reportCrime = async (req, res) => {
             try {
                 const image = await uploadToCloudinary(
                     req.files.FIR,
-                    "sheSecure_crime_reports",
+                    "sheSecure_crime_firCopy",
                     1000,
                     1000
                 );
@@ -167,8 +167,8 @@ export const reportCrime = async (req, res) => {
                 // Map the incoming field names to the model field names
                 const newSuspect = await Suspect.create({
                     suspectPhoto: suspectPhotoUrl,
-                    suspectName: suspect.name,       // Map from frontend 'name' to model 'suspectName'
-                    suspectGender: suspect.gender    // Map from frontend 'gender' to model 'suspectGender'
+                    suspectName: suspect.name,
+                    suspectGender: suspect.gender
                 });
 
                 suspectIds.push(newSuspect._id);
@@ -205,10 +205,10 @@ export const reportCrime = async (req, res) => {
                 // Map the incoming field names to the model field names
                 const newWitness = await Witness.create({
                     witnessPhoto: witnessPhotoUrl,
-                    witnessName: witness.name,               // Map from frontend 'name'
-                    witnessGender: witness.gender,           // Map from frontend 'gender'
-                    witnessContactNumber: witness.contactNumber,  // Map from frontend 'contactNumber'
-                    witnessAddress: witness.address          // Map from frontend 'address'
+                    witnessName: witness.name,               
+                    witnessGender: witness.gender,    
+                    witnessContactNumber: witness.contactNumber, 
+                    witnessAddress: witness.address
                 });
 
                 witnessIds.push(newWitness._id);
@@ -233,7 +233,7 @@ export const reportCrime = async (req, res) => {
                 for (const photo of photos) {
                     const uploadedPhoto = await uploadToCloudinary(
                         photo,
-                        "sheSecure_crime_reports",
+                        "sheSecure_crime_pictures",
                         1000,
                         1000
                     );
@@ -262,7 +262,7 @@ export const reportCrime = async (req, res) => {
                 for (const video of videos) {
                     const uploadedVideo = await uploadToCloudinary(
                         video,
-                        "sheSecure_crime_reports"
+                        "sheSecure_crime_videos"
                     );
                     crimeVideoUrls.push(uploadedVideo.secure_url);
                     createdResources.uploadedFiles.push({
@@ -528,8 +528,10 @@ export const getCrimesNearLocation = async (req, res) => {
             description: crime.description,
             crimePhotos: crime.crimePhotos,
             crimeVideos: crime.crimeVideos,
+            likeCount: crime.likeCount,
+            unlikeCount: crime.unlikeCount,
             createdAt: crime.createdAt,
-            distance: crime.distance, // Include distance in the response
+            distance: crime.distance,
             location: {
                 displayName: crime.location.displayName,
                 formattedAddress: crime.location.formattedAddress,

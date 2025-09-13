@@ -44,9 +44,6 @@ async function cleanupResources(qualificationIds = [], profile = null, user = nu
         // Delete qualifications if any were created
         if (qualificationIds.length > 0) {
             await Qualification.deleteMany({ _id: { $in: qualificationIds } });
-
-            // Optional: Clean up Cloudinary files if needed
-            // await deleteFromCloudinary(qualificationIds);
         }
     } catch (cleanupError) {
         console.error("Cleanup failed:", cleanupError);
@@ -117,12 +114,10 @@ export const sendOTP = async (req, res) => {
 
         const otp = otpGenerator.generate(6, { digits: true, alphabets: false, upperCase: false, specialChars: false });
 
-        console.log(otp);   
-        
+        console.log(otp);
+
         req.session.emailOTP = otp;
         req.session.otpExpiresAt = Date.now() + 5 * 60 * 1000;
-
-        console.log(req.session.emailOTP);
 
         // Save session data
         req.session.save((err) => {
@@ -159,8 +154,6 @@ export const sendOTP = async (req, res) => {
 export const verifyOTP = async (req, res) => {
     try {
         const { emailOTP } = req.body;
-
-        console.log(req.session.emailOTP, req.session.otpExpiresAt);
 
         // Check if OTP exists and has not expired
         if (!req.session.emailOTP || Date.now() > req.session.otpExpiresAt) {
@@ -307,21 +300,19 @@ export const signUp = async (req, res) => {
 
         // Send email (non-critical operation)
         if (createdUser.approved === "Unverified") {
-            mailSender(process.env.EMAIL_USER,"Account created & Pending for Verification",
+            mailSender(process.env.EMAIL_SUPER_ADMIN, "Account created & Pending for Verification",
                 `A new ${userType} has signed up and is awaiting approval.\n\nName: ${firstName} ${lastName}\nEmail: ${email}\n\nApprove or reject in the admin panel.`
             ).catch(console.error);
 
-            mailSender(email,"Account created & Pending for Verification",
-                `Hii ${firstName} ${lastName}\n\nEmail ${email}\n\n Your account is created successfully and waiting for verificaiton by SheSecure Authority.`
+            mailSender(email, "Account created & Pending for Verification",
+                `Hii ${firstName} ${lastName}\n\nEmail: ${email}\n\n Your account is created successfully and waiting for verificaiton by SheSecure Authority.`
             ).catch(console.error);
         }
-        else{
-            mailSender(email,"Account created & Pending for Verification",
-                `Hii ${firstName} ${lastName}\n\nEmail ${email}\n\n Your account is created successfully and now you can login <span style="color:blue">https://shesecure.vercel.app/login</span>.`
+        else {
+            mailSender(email, "Account created Successfully",
+                `Hii ${ firstName } ${ lastName }\n\nEmail: ${ email }\n\n Your account is created successfully and now you can login: < span style = "color:blue" > https://shesecure.vercel.app/login</span>.`
             ).catch(console.error);
         }
-
-        
 
         return res.status(200).json({
             success: true,
@@ -359,7 +350,7 @@ export const login = async (req, res) => {
                 path: 'additionalDetails',
                 select: 'image',
             })
-            .select('firstName lastName email userType token additionalDetails approved'); // ✅ only needed fields
+            .select('firstName lastName email userType token additionalDetails approved');
 
         if (!user) {
             return res.status(401).json({
@@ -482,7 +473,7 @@ export const customerCare = async (req, res) => {
         const userId = req.user._id;
         const user = await User.findById(userId);
 
-        if (user.accountType == 'Admin' || user.accountType === 'SuperAdmin') {
+        if (user.userType === 'SuperAdmin') {
             return res.status(500).json({
                 success: false,
                 message: "You can't fetch this type of data.",
@@ -514,7 +505,7 @@ export const customerCare = async (req, res) => {
 
         // Send email to your support team
         await mailSender(
-            "kuldeepbhagbole@gmail.com",
+            process.env.EMAIL_SUPER_ADMIN,
             `New Customer Query : ${subject}`,
             emailHtml
         );

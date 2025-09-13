@@ -4,6 +4,7 @@ import Profile from "../models/Profile.js";
 import EmergencyContacts from '../models/EmergencyContacts.js'
 import Location from "../models/Location.js";
 import { uploadToCloudinary } from "../utils/uploadToCloudinary.js";
+import cloudinary from 'cloudinary';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -44,21 +45,27 @@ export const updateProfile = async (req, res) => {
         }
 
         let imageUrl = null;
+        let imageId = null;
 
         // Check if a new display picture is uploaded
         if (req.files && req.files.displayPicture) {
             const displayPicture = req.files.displayPicture;
 
+            const oldProfile = await Profile.findById(user.additionalDetails);
+            if (oldProfile?.imageId) {
+                await cloudinary.uploader.destroy(oldProfile.imageId);
+            }
+
             // Upload image to Cloudinary
             const image = await uploadToCloudinary(
                 displayPicture,
-                process.env.FOLDER_NAME,
+                "sheSecure_profile_picture",
                 1000,
                 1000
             );
-            console.log("Uploaded Image:", image);
 
             imageUrl = image.secure_url;
+            imageId = image.public_id;
         }
 
         const { address, dob, gender } = req.body;
@@ -73,9 +80,10 @@ export const updateProfile = async (req, res) => {
         if (gender !== undefined) updateData.gender = gender;
         if (address !== undefined) updateData.address = address;
         if (dob !== undefined) updateData.dob = dob;
-        if (imageUrl !== null) updateData.image = imageUrl;
-
-        console.log(updateData, userId);
+        if (imageUrl !== null){ 
+            updateData.image = imageUrl;
+            updateData.imageId = imageId;
+        }
 
         // Update profile
         const updatedProfile = await Profile.findByIdAndUpdate(
@@ -88,7 +96,7 @@ export const updateProfile = async (req, res) => {
             return res.status(404).json({ success: false, message: "Profile not found." });
         }
 
-        // 🔵 Now, fetch full user info with populated profile
+        // Now, fetch full user info with populated profile
         const updatedUser = await User.findById(userId)
             .populate({
                 path: "additionalDetails",
@@ -98,7 +106,14 @@ export const updateProfile = async (req, res) => {
         return res.status(200).json({
             success: true,
             message: "Profile updated successfully.",
-            user: updatedUser,
+            user: {
+                _id: updatedUser._id,
+                firstName: updatedUser.firstName,
+                lastName: updatedUser.lastName,
+                email: updatedUser.email,
+                userType: updatedUser.userType,
+                image: updatedUser?.additionalDetails?.image || null,
+            },
         });
 
     } catch (error) {
