@@ -159,7 +159,9 @@ export const sendCustomerCareEmail = (firstName, lastName, email, mobileNumber, 
                             
                             <div class="detail-row">
                                 <span class="detail-label">Message</span>
-                                <div class="message-content">${message}</div>
+                                <div class="message-content">
+                                    ${message}
+                                </div>
                             </div>
                         </div>
                         
